@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { Card } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { toast } from "sonner";
 import { format } from "date-fns";
 import {
   Table,
@@ -62,8 +63,11 @@ export default function History() {
         });
 
         setHistory(games);
-      } catch (error) {
+      } catch (error: any) {
         console.error("Error fetching history:", error);
+        toast.error("Failed to load history", {
+          description: error.message || "Unknown error occurred"
+        });
       } finally {
         setLoading(false);
       }

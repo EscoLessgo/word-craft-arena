@@ -1,4 +1,5 @@
 import { Link, useLocation } from "react-router-dom";
+import { toast } from "sonner";
 import { Moon, Sun, BarChart3, History, Home, LogIn, LogOut, User } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useTheme } from "@/contexts/ThemeContext";
@@ -8,7 +9,7 @@ export const Navigation = () => {
   const { theme, toggleTheme } = useTheme();
   const { user, login, logout, loading } = useAuth();
   const location = useLocation();
-  
+
   const isActive = (path: string) => location.pathname === path;
 
   const handleAuth = async () => {
@@ -18,8 +19,11 @@ export const Navigation = () => {
       } else {
         await login();
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Auth error:', error);
+      toast.error("Authentication failed", {
+        description: error.message || "Please check your authorized domains in Firebase Console."
+      });
     }
   };
 
@@ -32,7 +36,7 @@ export const Navigation = () => {
               <h1 className="text-3xl md:text-4xl font-bold">Velarix</h1>
             </div>
           </Link>
-          
+
           <div className="flex items-center gap-2">
             <Button
               variant="ghost"
@@ -44,7 +48,7 @@ export const Navigation = () => {
                 <Home className="h-5 w-5" />
               </Link>
             </Button>
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -55,7 +59,7 @@ export const Navigation = () => {
                 <BarChart3 className="h-5 w-5" />
               </Link>
             </Button>
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -66,7 +70,7 @@ export const Navigation = () => {
                 <History className="h-5 w-5" />
               </Link>
             </Button>
-            
+
             <Button
               variant="ghost"
               size="icon"
@@ -89,9 +93,9 @@ export const Navigation = () => {
             >
               {user ? (
                 user.photoURL ? (
-                  <img 
-                    src={user.photoURL} 
-                    alt="Profile" 
+                  <img
+                    src={user.photoURL}
+                    alt="Profile"
                     className="h-5 w-5 rounded-full"
                   />
                 ) : (

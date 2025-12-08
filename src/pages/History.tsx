@@ -20,6 +20,7 @@ interface GameHistory {
   words_found: string[];
   pangrams_found: string[];
   rank?: string;
+  timestamp?: string;
 }
 
 const getRank = (score: number, maxScore: number = 500): string => {

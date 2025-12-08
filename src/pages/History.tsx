@@ -41,44 +41,46 @@ const getRank = (score: number, maxScore: number = 500): string => {
 export default function History() {
   const { user, loading: authLoading } = useAuth();
   const [history, setHistory] = useState<GameHistory[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(false);
   const [expandedRows, setExpandedRows] = useState<Set<number>>(new Set());
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchHistory = async () => {
-      // Wait for auth to finish loading
-      if (authLoading) {
+      // Don't fetch if auth is still loading or no user
+      if (authLoading || !user) {
         return;
       }
 
-      if (!user) {
-        setLoading(false);
-        return;
-      }
+      setLoading(true);
+      setError(null);
 
       try {
+        console.log("Fetching games for user:", user.uid);
         const gamesRef = collection(db, "users", user.uid, "games");
-        // Don't use orderBy to avoid index requirement - sort in JS instead
         const querySnapshot = await getDocs(gamesRef);
+
+        console.log("Found", querySnapshot.size, "games");
 
         const games: GameHistory[] = [];
         querySnapshot.forEach((doc) => {
+          console.log("Game doc:", doc.id, doc.data());
           games.push(doc.data() as GameHistory);
         });
 
-        // Sort by timestamp (newest first), fallback to game_date if no timestamp
+        // Sort by timestamp (newest first), fallback to game_date
         games.sort((a, b) => {
           const aTime = a.timestamp || a.game_date || '';
           const bTime = b.timestamp || b.game_date || '';
           return bTime.localeCompare(aTime);
         });
 
-        // Limit to 50 most recent
         setHistory(games.slice(0, 50));
-      } catch (error: any) {
-        console.error("Error fetching history:", error);
+      } catch (err: any) {
+        console.error("Error fetching history:", err);
+        setError(err.message || "Failed to load history");
         toast.error("Failed to load history", {
-          description: error.message || "Unknown error occurred"
+          description: err.message || "Unknown error occurred"
         });
       } finally {
         setLoading(false);
@@ -100,10 +102,45 @@ export default function History() {
     });
   };
 
-  if (authLoading || loading) {
+  // Show loading state
+  if (authLoading) {
     return (
       <div className="min-h-screen bg-game-bg flex items-center justify-center">
-        <div className="text-xl text-muted-foreground">Loading history...</div>
+        <div className="text-xl text-muted-foreground">Checking authentication...</div>
+      </div>
+    );
+  }
+
+  // Show not logged in
+  if (!user) {
+    return (
+      <div className="min-h-screen bg-game-bg flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <p className="text-lg text-muted-foreground">
+            Please log in to view your game history.
+          </p>
+        </Card>
+      </div>
+    );
+  }
+
+  // Show loading games
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-game-bg flex items-center justify-center">
+        <div className="text-xl text-muted-foreground">Loading your games...</div>
+      </div>
+    );
+  }
+
+  // Show error
+  if (error) {
+    return (
+      <div className="min-h-screen bg-game-bg flex items-center justify-center">
+        <Card className="p-8 text-center">
+          <p className="text-lg text-red-500 mb-4">Error: {error}</p>
+          <p className="text-muted-foreground">Check the browser console for more details.</p>
+        </Card>
       </div>
     );
   }
@@ -117,13 +154,7 @@ export default function History() {
           </span>
         </h1>
 
-        {!user ? (
-          <Card className="p-8 text-center">
-            <p className="text-lg text-muted-foreground">
-              Please log in to view your game history.
-            </p>
-          </Card>
-        ) : history.length === 0 ? (
+        {history.length === 0 ? (
           <Card className="p-8 text-center">
             <p className="text-lg text-muted-foreground">
               No games played yet. Start playing to build your history!
